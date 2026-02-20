@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Hospital = require('./models/Hospital');
 const Ambulance = require('./models/Ambulance');
+const User = require('./models/User');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/careDB';
 
@@ -81,6 +82,7 @@ async function seed() {
     // Clear existing data
     await Hospital.deleteMany({});
     await Ambulance.deleteMany({});
+    await User.deleteMany({});
     console.log('🗑️  Cleared existing data');
 
     // Insert hospitals
@@ -102,7 +104,52 @@ async function seed() {
     const insertedAmbulances = await Ambulance.insertMany(ambulances);
     console.log(`🚑 Inserted ${insertedAmbulances.length} ambulances`);
 
+    // Create default users (one per role)
+    const users = [
+      {
+        name: 'Admin User',
+        email: 'admin@setu.com',
+        password: 'admin123',
+        role: 'admin',
+        phone: '+91-9000000001',
+      },
+      {
+        name: 'Dr. Priya Sharma',
+        email: 'doctor@setu.com',
+        password: 'doctor123',
+        role: 'doctor',
+        phone: '+91-9000000002',
+        assignedHospitalId: insertedHospitals[0]._id,
+      },
+      {
+        name: 'Rajesh Kumar',
+        email: 'driver@setu.com',
+        password: 'driver123',
+        role: 'driver',
+        phone: '+91-9876543210',
+        assignedHospitalId: insertedHospitals[0]._id,
+      },
+      {
+        name: 'Rahul Verma',
+        email: 'patient@setu.com',
+        password: 'patient123',
+        role: 'patient',
+        phone: '+91-9000000004',
+      },
+    ];
+
+    // Create users one by one so pre-save hook hashes passwords
+    for (const userData of users) {
+      await User.create(userData);
+    }
+    console.log(`👤 Inserted ${users.length} users`);
+
     console.log('\n✅ Seeding complete!');
+    console.log('\n📋 Test credentials:');
+    console.log('   Admin:   admin@setu.com / admin123');
+    console.log('   Doctor:  doctor@setu.com / doctor123');
+    console.log('   Driver:  driver@setu.com / driver123');
+    console.log('   Patient: patient@setu.com / patient123');
     process.exit(0);
   } catch (err) {
     console.error('❌ Seeding error:', err.message);
